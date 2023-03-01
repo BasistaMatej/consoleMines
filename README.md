@@ -1,3 +1,3 @@
 # Hra Mini
 
-OOP
+FEI STU | OOP
