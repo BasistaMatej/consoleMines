@@ -1,1 +1,3 @@
-# consoleMines
+# Hra Mini
+
+OOP
