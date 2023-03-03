@@ -1,6 +1,5 @@
 package org.example;
 
-import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -19,8 +18,13 @@ public class Main {
     }
 
     private static void nakresliMapu(String[][] mapa,int rows) {
+        String[] riadok;
         for (int r= 0; r < rows; r++) {
-            System.out.println(Arrays.toString(mapa[r]));
+            riadok = mapa[r];
+            for (String bunka : riadok) {
+                System.out.print("|"+bunka);
+            }
+            System.out.print("|\n");
         }
     }
 
@@ -36,29 +40,24 @@ public class Main {
         return output;
     }
 
-    private  static void skontrolujMini(int[][] mini, int m, int rows, int cols) {
-        Random rand = new Random();
-
+    private  static void skontrolujMini(int[][] mini, int m, int rows, int cols, Random rand) {
         mini[m][0] = rand.nextInt(rows);
         mini[m][1] = rand.nextInt(cols);
         for (int j=0;j < m;j++) {
             if (mini[j][0] == mini[m][0] && mini[j][1] == mini[m][1]) {
-                skontrolujMini(mini, m, rows, cols);
+                skontrolujMini(mini, m, rows, cols, rand);
             }
         }
     }
 
     private static void genereujMini(int rows, int cols,int[][] mini) {
         int pocetMin = rows*cols/6;
+        Random rand = new Random();
 
         for (int m= 0; m < pocetMin; m++) {
-            skontrolujMini(mini,m,rows,cols);
+            skontrolujMini(mini,m,rows,cols, rand);
         }
 
-        // Vypisanie min
-        for (int j=0; j<pocetMin;j++) {
-            System.out.println(Arrays.toString(mini[j]));
-        }
     }
     private static void pridajMini(String[][] mapa, int rows, int cols, int[][] mini ){
 
@@ -151,22 +150,36 @@ public class Main {
             mapa[mina[0]][mina[1]] = "*";
         }
     }
+
+    private static  void vypisPocetMin(int pocetMin) {
+        if(pocetMin == 1) {
+            System.out.println("Pocet umiestnenych min je "+pocetMin+". Najdi ju!");
+        } else {
+            System.out.println("Pocet umiestnenych min je "+pocetMin+". Najdi ich!");
+        }
+    }
+
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         int cols;
         int rows;
         int pocetMin;
-        int[][] mini;
+        int[][] mini; // zoznam min a ich suradnice
         int[] suradnice = {-1,-1};
-        boolean endProcess = true;
-        //int[][] najdeneMini =
-        String[][] mapa;
-        String[][] mapaMini;
+        boolean hladatMinu = false;
+        int najdeneMini;
 
-        cols = sc.nextInt();
-        rows = sc.nextInt();
+        String[][] mapa;     // Mapa, ktoru s poliami, ktore pouzivatel vyskusal
+        String[][] mapaMini; // Vykreslena mapa s cislami a minami
+
+        do {
+            System.out.println("Zadaj platnu velkost plochy [sirka vyska]: ");
+            cols = sc.nextInt();
+            rows = sc.nextInt();
+        } while (cols <= 0 || rows <= 0);
 
         pocetMin  = rows*cols/6;
+        najdeneMini = 0;
 
         mini = new int[pocetMin][2];
         genereujMini(rows,cols,mini);
@@ -174,29 +187,52 @@ public class Main {
         mapaMini = vytvorMapu(rows,cols);
         pridajMini(mapaMini,rows,cols,mini);
 
-        nakresliMapu(mapaMini,rows);
+        vypisPocetMin(pocetMin);
+        nakresliMapu(mapa,rows);
 
-        while(endProcess) {
-            System.out.println("Zadaj suradnice[X Y]");
-            suradnice[1] = sc.nextInt()-1;
-            suradnice[0] = sc.nextInt()-1;
-
-            if(inArray(mini,suradnice)) {
-                System.out.println("Mine was found!");
-                mapa[suradnice[0]][suradnice[1]] = "M";
-                endProcess = false;
-            } else {
-                try{
-                    int number = Integer.parseInt(mapaMini[suradnice[0]][suradnice[1]]);
-                    mapa[suradnice[0]][suradnice[1]] = Integer.toString(number);
+        while(najdeneMini != pocetMin) {
+            do {
+                System.out.println("Zadaj platné suradnice[X Y]:");
+                System.out.println("Alebo zadaj cislo 0 na oznacenie mini:");
+                suradnice[1] = sc.nextInt() - 1;
+                if(suradnice[1] == -1) {
+                    System.out.println("Zadaj platné suradnice miny [X Y]:");
+                    suradnice[1] = sc.nextInt() - 1;
+                    hladatMinu = true;
                 }
-                catch (NumberFormatException ex){
-                    mapa[suradnice[0]][suradnice[1]] = "0";
+                suradnice[0] = sc.nextInt() - 1;
+            } while (suradnice[1] < 0 || suradnice[0] < 0 || suradnice[1] >= cols || suradnice[0] >= rows);
+
+            if(hladatMinu) {
+                if(inArray(mini,suradnice)) {
+                    System.out.println("Uspesne si oznacil minu.");
+                    mapa[suradnice[0]][suradnice[1]] = "M";
+                    najdeneMini++;
+                } else {
+                    System.out.println("Toto nebola mina. :( Prehral si.");
+                    najdeneMini = pocetMin;
+                }
+            } else {
+                if (inArray(mini, suradnice)) {
+                    System.out.println("Trafil si minu! Prehral si!");
+                    mapa[suradnice[0]][suradnice[1]] = "M";
+                    najdeneMini = pocetMin;
+                } else {
+                    try {
+                        int number = Integer.parseInt(mapaMini[suradnice[0]][suradnice[1]]);
+                        mapa[suradnice[0]][suradnice[1]] = Integer.toString(number);
+                    } catch (NumberFormatException ex) {
+                        mapa[suradnice[0]][suradnice[1]] = "0";
+                    }
                 }
             }
 
             nakresliMapu(mapa,rows);
         }
+        System.out.println("\nKoniec hry. ");
+
+        System.out.println("Celkova mapa s minami: ");
+        nakresliMapu(mapaMini,rows);
     }
 
 }
